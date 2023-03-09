@@ -1,0 +1,1 @@
+# moleculer-app-sample
