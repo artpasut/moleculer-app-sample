@@ -82,5 +82,6 @@ jobs:
         run: exit 1
 
       - name: Terraform Apply
+        working-directory: ./terraform
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: terraform apply -auto-approve -var-file=inject-production.tfvars
