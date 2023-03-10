@@ -15,7 +15,7 @@ data "template_file" "deploy_service" {
   vars = {
     aws_region         = data.aws_region.current.name
     aws_account_id     = data.aws_caller_identity.current.account_id
-    ssm_parameter_name = split("/", aws_ssm_parameter.service.arn)
+    ssm_parameter_name = split("/", aws_ssm_parameter.service.arn)[1]
   }
 }
 
