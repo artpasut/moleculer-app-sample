@@ -11,18 +11,17 @@ On the welcome page you can test the generated services via API Gateway and chec
 In the terminal, try the following commands:
 - `nodes` - List all connected nodes.
 - `actions` - List all registered service actions.
-- `call greeter.hello` - Call the `greeter.hello` action.
-- `call greeter.welcome --name John` - Call the `greeter.welcome` action with the `name` parameter.
-- `call products.list` - List the products (call the `products.list` action).
+- `call calculator.info` - Call the `calculator.info` action.
+- `call calculator.add --first ' 1 ' --second ' 2 '` - Call the `calculator.add` action with `first` and `second` parameters.
+- `call calculator.sub --first ' 1 ' --second ' 2 '` - Call the `calculator.sub` action with `first` and `second` parameters.
+- `call math.add --a 1 --b 2` - Call the `math.add` action with `a` and `b` parameters.
+- `call math.sub --a 1 --b 2` - Call the `math.sub` action with `a` and `b` parameters.
 
 
 ## Services
 - **api**: API Gateway services
-- **greeter**: Sample service with `hello` and `welcome` actions.
-- **products**: Sample DB service. To use with MongoDB, set `MONGO_URI` environment variables and install MongoDB adapter with `npm i moleculer-db-adapter-mongo`.
-
-## Mixins
-- **db.mixin**: Database access mixin for services. Based on [moleculer-db](https://github.com/moleculerjs/moleculer-db#readme)
+- **calculator**: Sample service with `info`, `add` and `sub` actions.
+- **math**: Sample DB service with `add` and `sub` actions that will perform calculation.
 
 
 ## Useful links
@@ -36,7 +35,47 @@ In the terminal, try the following commands:
 - `npm run start`: Start production mode (set `SERVICES` env variable to load certain services)
 - `npm run cli`: Start a CLI and connect to production. Don't forget to set production namespace with `--ns` argument in script
 - `npm run lint`: Run ESLint
+- `npm run lint:fix`: Run ESLint with fix
 - `npm run ci`: Run continuous test mode with watching
 - `npm test`: Run tests & generate coverage report
 - `npm run dc:up`: Start the stack with Docker Compose
 - `npm run dc:down`: Stop the stack with Docker Compose
+
+## Running services
+### Using Docker-compose
+The [`docker-compose.yml`](/docker-compose.yml) consists of the following. </br>
+* api (api gateway service)
+* calculator (calculator service)
+* math (math service)
+* nats (transporter)
+* traefik (proxy)
+```bash
+npm run dc:up #first time, run this
+#made any changes to application
+npm run dc:up --build #run this, to rebuild service image and update compose stack
+#stop using?
+npm run dc:down
+```
+
+### Using Github Actions
+#### Prerequisite
+- Add following variables in github repository actions variables. Click [here](https://docs.github.com/en/actions/learn-github-actions/variables#creating-configuration-variables-for-a-repository), show how to add variables.
+  - name: `ECR_REPOSITORY` value: `ECR repository that created from terraform`
+  - name: `S3_SCRIPTS_BUCKET_NAME` value: `S3 scripts bucket that created from terraform`
+  - name: `API_INSTACE_ID` value: `EC2 instance id of api service that created from terraform`
+  - name: `CALCULATOR_INSTACE_ID` value: `EC2 instance id of calculator service that created from terraform`
+  - name: `MATH_INSTACE_ID` value: `EC2 instance id of math service that created from terraform`
+  - name: `NATS_INSTACE_ID` value: `EC2 instance id of NATS service that created from terraform`
+
+The Github Actions consists of following steps. [`(ci.yml)`](/.github/workflows/ci.yml) </br>
+1. Running test jobs which includes ESLint, unit test coverage.
+2. Building service container image and push to ECR.
+3. Deploy NATS service with image from dockerhub using AWS System manager session. 
+4. Deploy API, calculator, math service using AWS System manager session.
+
+#### Running Github Actions
+```
+There are two ways to run.
+1. Merge, push to main branch will trigger Github actions to make a deployment.
+2. PR will trigger Github actions to run only test job.
+```
