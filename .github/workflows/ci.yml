@@ -41,7 +41,7 @@ jobs:
       id-token: write
       contents: read
     outputs:
-      image_uri: ${{ steps.output.outputs.image_uri }}
+      image_uri: ${{ steps.outputs.outputs.image_uri }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -90,7 +90,7 @@ jobs:
           cache-to: type=inline
 
       - name: outputs
-        id: output
+        id: outputs
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
@@ -120,11 +120,11 @@ jobs:
 
       - name: SSM
         env:
-          IMAGE_URI: ${{needs.build.outputs.image_uri}}
+          IMAGE_URI: ${{ needs.build.outputs.image_uri }}
           S3_BUCKET_NAME: ${{ vars.S3_SCRIPTS_BUCKET_NAME }}
           API_INSTACE_ID: ${{ vars.API_INSTACE_ID }}
         run: |
           unbuffer aws ssm start-session \
             --document-name 'AWS-StartNonInteractiveCommand' \
-            --parameters '{"command": ["sudo sh -c \"cd && aws s3 cp s3://${S3_BUCKET_NAME}/scripts/deploy-service.sh . && ./deploy-service.sh -i ${IMAGE_URI} -s api -e api.env\""]}' \
+            --parameters '{"command": ["sudo sh -c \"cd && aws s3 cp s3://$S3_BUCKET_NAME/scripts/deploy-service.sh . && ./deploy-service.sh -i $IMAGE_URI -s api -e api.env\""]}' \
             --target $API_INSTACE_ID
