@@ -108,8 +108,6 @@ jobs:
       - name: SSM
         run: |
           unbuffer aws ssm start-session \
-            --target i-07c09f39e8a8d7e08
-          ls
-          sudo su ubuntu
-          aws --version
-          docker --version
+            --document-name 'AWS-StartNonInteractiveCommand' \
+            --parameters '{"command": ["sudo sh -c \"docker --version\""]}' \
+            --target "i-07c09f39e8a8d7e08"
