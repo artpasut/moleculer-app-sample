@@ -1,6 +1,5 @@
 provider "aws" {
-  region  = "ap-southeast-1"
-  profile = "personal"
+  region = "ap-southeast-1"
 }
 
 terraform {
@@ -14,10 +13,9 @@ terraform {
   }
 
   backend "s3" {
-    bucket  = "terraform-states-r6hjtxh"
-    key     = "states"
-    region  = "ap-southeast-1"
-    profile = "personal"
+    bucket = "terraform-states-r6hjtxh"
+    key    = "states"
+    region = "ap-southeast-1"
   }
 }
 
