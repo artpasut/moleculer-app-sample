@@ -2,6 +2,7 @@
 
 # moleculer-app-sample
 This is a [Moleculer](https://moleculer.services/)-based microservices project. Generated with the [Moleculer CLI](https://moleculer.services/docs/0.14/moleculer-cli.html).
+- [Click to visit this application in live!](https://mock.arta.work/)
 
 ## Usage
 Start the project with `npm run dev` command. 
@@ -26,6 +27,7 @@ In the terminal, try the following commands:
 
 ## Useful links
 
+* Sample App Live: https://mock.arta.work/
 * Moleculer website: https://moleculer.services/
 * Moleculer Documentation: https://moleculer.services/docs/0.14/
 
