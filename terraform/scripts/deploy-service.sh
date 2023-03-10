@@ -7,8 +7,8 @@ do
         e) env_file=${OPTARG};;
     esac
 done
-aws --region=ap-southeast-1 ssm get-parameter --name "/test/services" --output text --query Parameter.Value > $env_file
-aws ecr get-login-password --region ap-southeast-1 | docker login --username AWS --password-stdin 955746675523.dkr.ecr.ap-southeast-1.amazonaws.com
+aws --region=${aws_region} ssm get-parameter --name ${ssm_parameter_name} --output text --query Parameter.Value > $env_file
+aws ecr get-login-password --region ${aws_region} | docker login --username AWS --password-stdin ${aws_account_id}.dkr.ecr.${aws_region}.amazonaws.com
 docker pull $image
 docker stop $service
 docker rm $service

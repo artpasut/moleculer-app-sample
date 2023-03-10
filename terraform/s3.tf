@@ -15,8 +15,8 @@ resource "aws_s3_bucket_acl" "scripts" {
 resource "aws_s3_object" "script_service" {
   bucket = aws_s3_bucket.scripts.id
   key    = "scripts/deploy-service.sh"
-  source = "./scripts/deploy-service.sh"
-  etag   = filemd5("./scripts/deploy-service.sh")
+  source = data.template_file.deploy_service.rendered
+  etag   = filemd5(data.template_file.deploy_service.rendered)
 }
 
 resource "aws_s3_object" "script_nats" {
