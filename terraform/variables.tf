@@ -23,7 +23,6 @@ variable "api_service_info" {
     name              = string
     service_port      = number
     instance_type     = string
-    user_data         = string
     key_name          = string
     health_check_path = string
   })
@@ -34,7 +33,6 @@ variable "calculator_service_info" {
   type = object({
     name          = string
     instance_type = string
-    user_data     = string
     key_name      = string
   })
 }
@@ -44,7 +42,6 @@ variable "math_service_info" {
   type = object({
     name          = string
     instance_type = string
-    user_data     = string
     key_name      = string
   })
 }
@@ -55,7 +52,6 @@ variable "nats_service_info" {
     name          = string
     service_port  = number
     instance_type = string
-    user_data     = string
     key_name      = string
   })
 }

@@ -15,21 +15,18 @@ api_service_info = {
   key_name          = "application-key"
   name              = "test-api-service"
   service_port      = 3000
-  user_data         = "./userdata.sh"
 }
 
 calculator_service_info = {
   instance_type = "t2.micro"
   key_name      = "application-key"
   name          = "test-calculator-service"
-  user_data     = "./userdata.sh"
 }
 
 math_service_info = {
   instance_type = "t2.micro"
   key_name      = "application-key"
   name          = "test-math-service"
-  user_data     = "./userdata.sh"
 }
 
 nats_service_info = {
@@ -37,5 +34,4 @@ nats_service_info = {
   key_name      = "application-key"
   name          = "test-nats-service"
   service_port  = 4222
-  user_data     = "./userdata.sh"
 }
