@@ -1,10 +1,10 @@
 #!/bin/bash
 while getopts i:s:e: flag
 do
-    case "${flag}" in
-        i) image=${OPTARG};;
-        s) service=${OPTARG};;
-        e) env_file=${OPTARG};;
+    case "$flag" in
+        i) image=$OPTARG;;
+        s) service=$OPTARG;;
+        e) env_file=$OPTARG;;
     esac
 done
 aws --region=${aws_region} ssm get-parameter --name ${ssm_parameter_name} --output text --query Parameter.Value > $env_file

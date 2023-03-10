@@ -13,10 +13,10 @@ resource "aws_s3_bucket_acl" "scripts" {
 }
 
 resource "aws_s3_object" "script_service" {
-  bucket = aws_s3_bucket.scripts.id
-  key    = "scripts/deploy-service.sh"
-  source = data.template_file.deploy_service.rendered
-  etag   = filemd5(data.template_file.deploy_service.rendered)
+  bucket       = aws_s3_bucket.scripts.id
+  key          = "scripts/deploy-service.sh"
+  content      = data.template_file.deploy_service.rendered
+  content_type = "binary/octet-stream"
 }
 
 resource "aws_s3_object" "script_nats" {
