@@ -13,9 +13,55 @@ resource "aws_lb_listener" "http" {
   port              = "80"
   protocol          = "HTTP"
 
+
   default_action {
+    type = "redirect"
+
+    redirect {
+      port        = "443"
+      protocol    = "HTTPS"
+      status_code = "HTTP_301"
+    }
+  }
+}
+
+resource "aws_lb_listener" "https" {
+  load_balancer_arn = aws_lb.alb.id
+  port              = "443"
+  protocol          = "TLS"
+  certificate_arn   = var.alb_info.certificate_arn
+  alpn_policy       = "HTTP2Preferred"
+
+  default_action {
+    type = "fixed-response"
+
+    fixed_response {
+      content_type = "text/plain"
+      message_body = "Not found"
+      status_code  = "404"
+    }
+  }
+}
+
+resource "aws_lb_listener_rule" "api" {
+  listener_arn = aws_lb_listener.https.arn
+  priority     = 100
+
+  action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.ec2_api_service.arn
+  }
+
+  condition {
+    path_pattern {
+      values = ["/*"]
+    }
+  }
+
+  condition {
+    host_header {
+      values = [var.alb_info.api_domain_name]
+    }
   }
 }
 

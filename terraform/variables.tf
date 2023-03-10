@@ -9,6 +9,14 @@ variable "name" {
   type        = string
 }
 
+variable "alb_info" {
+  description = "ALB variables related"
+  type = object({
+    certificate_arn = string
+    api_domain_name = string
+  })
+}
+
 variable "vpc_info" {
   description = "VPC variables related"
   type = object({
