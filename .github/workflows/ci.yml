@@ -103,7 +103,7 @@ jobs:
 
       - name: Install AWS CLI
         run: |
-          sudo apt-get install -y awscli
+          sudo apt-get install -y awscli expect
 
       - name: SSM
         run: |
