@@ -1,9 +1,9 @@
 data "template_file" "user_data" {
-  template = file("./scripts/user_data.sh")
+  template = file("${path.module}/scripts/user_data.sh")
 }
 
 data "template_file" "cloud_init" {
-  template = file("./scripts/cloud-init.yml")
+  template = file("${path.module}/scripts/cloud-init.yml")
 }
 
 data "template_cloudinit_config" "user_data" {
