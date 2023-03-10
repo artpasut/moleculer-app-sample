@@ -4,6 +4,11 @@ tags = {
 
 name = "test"
 
+alb_info = {
+  api_domain_name = "mock.arta.work"
+  certificate_arn = "arn:aws:acm:ap-southeast-1:955746675523:certificate/2cbd0199-a75f-42fe-a5f6-ace00965dc1b"
+}
+
 vpc_info = {
   availability_zone = ["ap-southeast-1b", "ap-southeast-1c"]
   cidr              = "192.168.0.0/20"

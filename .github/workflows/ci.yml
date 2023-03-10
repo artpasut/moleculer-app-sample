@@ -1,0 +1,235 @@
+name: application-deployment
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup node.js (16)
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+
+      - name: Install dependencies
+        if: steps.node_modules.outputs.cache-hit != 'true'
+        run: npm install
+
+      - name: Lint
+        run: npm run lint:fix
+
+      - name: Unit test coverage
+        id: unit-test
+        run: npm run test
+
+  build:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    name: build
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Set image tag from github references
+        id: image-tag
+        run: |
+          export SHORT_SHA=`echo ${{ github.sha }} | cut -c1-7`
+          echo ::set-output name=tag::${SHORT_SHA}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: ${{ secrets.IAM_OIDC_ROLE }}
+          role-session-name: OIDCSession
+          aws-region: ap-southeast-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Set up Docker Context for Buildx
+        shell: bash
+        run: |
+          docker context create builders
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+        with:
+          version: latest
+          endpoint: builders
+
+      - name: Build app and push to ECR with ${{ steps.image-tag.outputs.tag }} tag
+        uses: docker/build-push-action@v3.0.0
+        id: build
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+          IMAGE_TAG: ${{ steps.image-tag.outputs.tag }}
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          tags: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }},${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
+          cache-from: type=registry,ref=${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
+          cache-to: type=inline
+    outputs:
+      image-tag: ${{ steps.image-tag.outputs.tag }}
+
+  deploy-nats:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    name: deploy-nats
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: ${{ secrets.IAM_OIDC_ROLE }}
+          role-session-name: OIDCSession
+          aws-region: ap-southeast-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Install common packages
+        run: |
+          sudo apt-get install -y expect
+
+      - name: Deploy nats using SSM
+        id: deploy-nats
+        env:
+          IMAGE_URI: nats:2
+          S3_BUCKET_NAME: ${{ vars.S3_SCRIPTS_BUCKET_NAME }}
+          NATS_INSTACE_ID: ${{ vars.NATS_INSTACE_ID }}
+        run: |
+          unbuffer aws ssm start-session \
+            --document-name 'AWS-StartNonInteractiveCommand' \
+            --parameters '{"command": ["sudo sh -c \"cd && aws s3 cp s3://'$S3_BUCKET_NAME'/scripts/deploy-nats.sh . && chmod +x deploy-nats.sh && ./deploy-nats.sh -i '$IMAGE_URI' -s nats\""]}' \
+            --target $NATS_INSTACE_ID
+
+  deploy-api:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    name: deploy-api
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: ${{ secrets.IAM_OIDC_ROLE }}
+          role-session-name: OIDCSession
+          aws-region: ap-southeast-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Install common packages
+        run: |
+          sudo apt-get install -y expect
+
+      - name: Deploy API using SSM with ${{ needs.build.outputs.image-tag }} tag
+        id: deploy-api
+        env:
+          IMAGE_URI: ${{ steps.login-ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY }}:${{ needs.build.outputs.image-tag }}
+          S3_BUCKET_NAME: ${{ vars.S3_SCRIPTS_BUCKET_NAME }}
+          API_INSTACE_ID: ${{ vars.API_INSTACE_ID }}
+        run: |
+          unbuffer aws ssm start-session \
+            --document-name 'AWS-StartNonInteractiveCommand' \
+            --parameters '{"command": ["sudo sh -c \"cd && aws s3 cp s3://'$S3_BUCKET_NAME'/scripts/deploy-service.sh . && chmod +x deploy-service.sh && ./deploy-service.sh -i '$IMAGE_URI' -s api -e api.env\""]}' \
+            --target $API_INSTACE_ID
+
+  deploy-calculator:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    name: deploy-calculator
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: ${{ secrets.IAM_OIDC_ROLE }}
+          role-session-name: OIDCSession
+          aws-region: ap-southeast-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Install common packages
+        run: |
+          sudo apt-get install -y expect
+
+      - name: Deploy calculator using SSM with ${{ needs.build.outputs.image-tag }} tag
+        id: deploy-calculator
+        env:
+          IMAGE_URI: ${{ steps.login-ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY }}:${{ needs.build.outputs.image-tag }}
+          S3_BUCKET_NAME: ${{ vars.S3_SCRIPTS_BUCKET_NAME }}
+          CALCULATOR_INSTACE_ID: ${{ vars.CALCULATOR_INSTACE_ID }}
+        run: |
+          unbuffer aws ssm start-session \
+            --document-name 'AWS-StartNonInteractiveCommand' \
+            --parameters '{"command": ["sudo sh -c \"cd && aws s3 cp s3://'$S3_BUCKET_NAME'/scripts/deploy-service.sh . && chmod +x deploy-service.sh && ./deploy-service.sh -i '$IMAGE_URI' -s calculator -e calculator.env\""]}' \
+            --target $CALCULATOR_INSTACE_ID
+
+  deploy-math:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    name: deploy-math
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: ${{ secrets.IAM_OIDC_ROLE }}
+          role-session-name: OIDCSession
+          aws-region: ap-southeast-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Install common packages
+        run: |
+          sudo apt-get install -y expect
+
+      - name: Deploy math using SSM with ${{ needs.build.outputs.image-tag }} tag
+        id: deploy-math
+        env:
+          IMAGE_URI: ${{ steps.login-ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY }}:${{ needs.build.outputs.image-tag }}
+          S3_BUCKET_NAME: ${{ vars.S3_SCRIPTS_BUCKET_NAME }}
+          MATH_INSTACE_ID: ${{ vars.MATH_INSTACE_ID }}
+        run: |
+          unbuffer aws ssm start-session \
+            --document-name 'AWS-StartNonInteractiveCommand' \
+            --parameters '{"command": ["sudo sh -c \"cd && aws s3 cp s3://'$S3_BUCKET_NAME'/scripts/deploy-service.sh . && chmod +x deploy-service.sh && ./deploy-service.sh -i '$IMAGE_URI' -s math -e math.env\""]}' \
+            --target $MATH_INSTACE_ID

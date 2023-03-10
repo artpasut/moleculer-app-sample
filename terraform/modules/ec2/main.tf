@@ -15,8 +15,26 @@ resource "aws_iam_role" "this" {
   assume_role_policy = data.aws_iam_policy_document.this_assume_role.json
   managed_policy_arns = [
     "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore",
-    "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+    "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly",
+    "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"
   ]
+  inline_policy {
+    name = "allow-access-parameter"
+
+    policy = jsonencode({
+      Version = "2012-10-17"
+      Statement = [
+        {
+          Action = [
+            "ssm:*Parameter",
+            "ssm:*Parameters"
+          ]
+          Effect   = "Allow"
+          Resource = "*"
+        },
+      ]
+    })
+  }
 }
 
 resource "aws_iam_instance_profile" "this" {
