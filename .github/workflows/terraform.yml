@@ -23,7 +23,8 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
-          role-to-assume: ${{ env.IAM_OIDC_ROLE }}
+          role-to-assume: ${{ secrets.IAM_OIDC_ROLE }}
+          role-session-name: OIDCSession
           aws-region: ap-southeast-1
 
       - uses: hashicorp/setup-terraform@v2
